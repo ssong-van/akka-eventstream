@@ -1,55 +1,29 @@
 package com.typesafe.training.eventstream
 
 import events._
-import akka.actor.{Actor,ActorRef,Props}
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
+import akka.actor.{Actor,Props}
+
 
 object EventStreamSupervisor {
-  def props : Props = Props(new EventStreamSupervisor)
-  case class Tick(request : List[Request])
-  case object InactivityPoll
-  case class RemoveInactiveSession(sessionId: Long)
+  def props: Props = Props(new EventStreamSupervisor)
+
+  case class Tick(request: List[Request])
+  case class UserInactive(sessionId: Long)
+
 }
 
 class EventStreamSupervisor extends Actor {
-  var users : Map[Long, ActorRef] = Map()
-  inactivityPoll
-
+  val proxyActor = context.actorOf(Proxy.props, "proxy")
   val statsActor = context.actorOf(Stats.props, "stats")
 
-  def inactivityPoll = {
-    context.system.scheduler.scheduleOnce(5 minutes, self, EventStreamSupervisor.InactivityPoll)
-  }
-
   def processTick(requests : List[Request]) : Unit = {
-    val userActors: List[(ActorRef, Request)] = for {
-      request <- requests
-      userActor : ActorRef = users.getOrElse(request.session.id, {
-        val userActor : ActorRef = context.actorOf(User.props(request.session.id))
-        val entry = request.session.id -> userActor
-        users += entry
-        userActor
-      })
-    } yield (userActor, request)
-
-    userActors map(userActorRequest => {
-      userActorRequest._1 ! User.AddEventToHistory(userActorRequest._2)
-      statsActor ! Stats.RecordRequest(userActorRequest._2)
-    })
+    proxyActor ! Proxy.ProxyRequest(requests)
   }
 
   def receive = {
     case EventStreamSupervisor.Tick(request) => processTick(request)
-    case EventStreamSupervisor.InactivityPoll => {
-      users map( user => user._2 forward User.IsInactive(statsActor))
-      inactivityPoll
-    }
-    case EventStreamSupervisor.RemoveInactiveSession(sessionId: Long) => {
-      users -= sessionId
-    }
+    //case EventStreamSupervisor.UserInactive(sessionId) => statsActor !
     case Stats.AverageVisitTime => statsActor forward Stats.AverageVisitTime
     case Stats.TopLandingPages(n) => statsActor forward Stats.TopLandingPages(n)
   }
-
 }

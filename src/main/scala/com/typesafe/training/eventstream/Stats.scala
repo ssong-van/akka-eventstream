@@ -69,8 +69,8 @@ class Stats extends Actor{
     }
 
     case Stats.UserInactive(sessionId: Long, event: ListBuffer[Request]) => {
-      inactiveSessions += sessionId
-      sender() ! EventStreamSupervisor.RemoveInactiveSession(sessionId)
+//      inactiveSessions += sessionId
+//      sender() ! EventStreamSupervisor.RemoveInactiveSession(sessionId)
     }
 
     case Stats.AverageVisitTime => println(averageVisitTime)

@@ -1,35 +1,36 @@
 package com.typesafe.training.eventstream
 
 import events._
-import akka.actor.{Actor,Props, ActorRef}
-
+import akka.actor.{Cancellable, Actor, Props}
+import scala.concurrent.duration._
 import scala.collection.mutable.ListBuffer
 
 object User {
   def props(sessionId : Long) : Props = Props(new User(sessionId))
 
-  case class AddEventToHistory(request : Request)
-  case class IsInactive(statsActor: ActorRef)
-
-  val fiveMinutesInMillis: Long = 5 * 60 * 1000
+  case class AddEventToHistory(requests : List[Request])
+  case object Inactive
 }
 
 class User(val sessionId : Long) extends Actor {
-  val events: ListBuffer[Request] = ListBuffer()
+  import context._
 
-  def inactive: Boolean = {
-    // Head is the latest event
-    (System.currentTimeMillis() - events.head.timestamp) >= User.fiveMinutesInMillis
-  }
+  val events: ListBuffer[Request] = ListBuffer()
+  var scheduleToCancel : Option[Cancellable] = None
 
   def receive : Receive = {
-    case User.AddEventToHistory(request) => {
+    case User.AddEventToHistory(requests) => {
+      scheduleToCancel match {
+        case Some(schedulerToCancel) => schedulerToCancel.cancel()
+        case None => //Do nothing
+      }
       // Prepend to the existing requests
-      request +=: events
+      events ++ requests
+      scheduleToCancel = Some(context.system.scheduler.scheduleOnce(5 minutes, self, User.Inactive))
     }
 
-    case User.IsInactive(statsActor) => {
-      if (inactive) statsActor ! Stats.UserInactive(sessionId, events)
+    case User.Inactive => {
+      context.parent ! Proxy.UserInactive(self)
     }
   }
 }
