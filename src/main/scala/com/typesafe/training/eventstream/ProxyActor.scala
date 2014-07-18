@@ -20,16 +20,16 @@ class Proxy extends Actor {
   def killUserActor(user : ActorRef) : Unit = user ! PoisonPill
 
   def handleRequest(requests : List[Request]) = {
-    val sessionToRequests = (for (request <- requests) yield(request.session.id, request)).groupBy(_._1).map {case (k,v) => (k,v.map(_._2))}
+    val sessionToRequests : Map[Long, List[Request]] =
+      requests.groupBy(_.session.id)
 
-    sessionToRequests map (sessionrequests => {
-      val (sessionid,requests) = (sessionrequests._1,sessionrequests._2)
+    sessionToRequests map {case(sessionid,requests) => {
       val userActor : ActorRef =
         users.getOrElseUpdate(sessionid, context.actorOf(User.props(sessionid)))
 
       if (requests.size > 100) self ! Proxy.UserSuspended(userActor)
       else userActor ! User.AddEventToHistory(requests)
-    })
+    }}
   }
 
   def removeUser(user: ActorRef) : Unit = {
