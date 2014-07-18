@@ -7,7 +7,5 @@ object Proxy {
 }
 
 class Proxy extends Actor {
-  override def receive {
-
-  }
+  override def receive = ???
 }

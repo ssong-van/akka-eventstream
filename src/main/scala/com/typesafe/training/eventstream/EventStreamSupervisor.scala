@@ -3,6 +3,7 @@ package com.typesafe.training.eventstream
 import events._
 import akka.actor.{Actor,ActorRef,Props}
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object EventStreamSupervisor {
   def props : Props = Props(new EventStreamSupervisor)
@@ -32,7 +33,10 @@ class EventStreamSupervisor extends Actor {
       })
     } yield (userActor, request)
 
-    userActors map(userActorRequest => userActorRequest._1 ! User.AddEventToHistory(userActorRequest._2))
+    userActors map(userActorRequest => {
+      userActorRequest._1 ! User.AddEventToHistory(userActorRequest._2)
+      statsActor ! Stats.RecordRequest(userActorRequest._2)
+    })
   }
 
   def receive = {
@@ -44,6 +48,8 @@ class EventStreamSupervisor extends Actor {
     case EventStreamSupervisor.RemoveInactiveSession(sessionId: Long) => {
       users -= sessionId
     }
+    case Stats.AverageVisitTime => statsActor forward Stats.AverageVisitTime
+    case Stats.TopLandingPages(n) => statsActor forward Stats.TopLandingPages(n)
   }
 
 }

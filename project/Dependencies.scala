@@ -1,3 +1,4 @@
+import sbt.Keys._
 import sbt._
 
 object Version {
@@ -13,6 +14,7 @@ object Library {
   val akkaTestkit    = "com.typesafe.akka"      %% "akka-testkit"             % Version.akka
   val logbackClassic = "ch.qos.logback"         %  "logback-classic"          % Version.logback
   val scalaTest      = "org.scalatest"          %% "scalatest"                % Version.scalaTest
+  val jodatime       = "joda-time"               % "joda-time"                 % "2.3"
 }
 
 object Dependencies {
@@ -24,6 +26,7 @@ object Dependencies {
     akkaSlf4j,
     logbackClassic,
     akkaTestkit % "test",
-    scalaTest   % "test"
+    scalaTest   % "test",
+    jodatime
   )
 }
