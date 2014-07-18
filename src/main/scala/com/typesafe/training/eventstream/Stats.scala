@@ -3,11 +3,11 @@ package com.typesafe.training.eventstream
 import akka.actor.{Props, Actor}
 import events._
 
-import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 
 object Stats {
   def props: Props = Props(new Stats)
-  case class UserInactive(sessionId: Long, event: List[Request])
+  case class UserInactive(sessionId: Long, event: ListBuffer[Request])
   case class RecordRequest(request : Request)
 }
 
@@ -27,7 +27,7 @@ class Stats extends Actor{
       recordStats(request)
     }
 
-    case Stats.UserInactive(sessionId: Long, event: List[Request]) => {
+    case Stats.UserInactive(sessionId: Long, event: ListBuffer[Request]) => {
       inactiveSessions += sessionId
       sender() ! EventStreamSupervisor.RemoveInactiveSession(sessionId)
     }

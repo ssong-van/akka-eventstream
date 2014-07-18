@@ -3,6 +3,8 @@ package com.typesafe.training.eventstream
 import events._
 import akka.actor.{Actor,Props, ActorRef}
 
+import scala.collection.mutable.ListBuffer
+
 object User {
   def props(sessionId : Long) : Props = Props(new User(sessionId))
 
@@ -13,18 +15,17 @@ object User {
 }
 
 class User(val sessionId : Long) extends Actor {
-  var events : List[Request] = List()
-
-  var lastEventTimestamp: Long = System.currentTimeMillis()
+  val events: ListBuffer[Request] = ListBuffer()
 
   def inactive: Boolean = {
-    (System.currentTimeMillis() - lastEventTimestamp) >= User.fiveMinutesInMillis
+    // Head is the latest event
+    (System.currentTimeMillis() - events.head.timestamp) >= User.fiveMinutesInMillis
   }
 
   def receive : Receive = {
     case User.AddEventToHistory(request) => {
-      events = events :+ request
-      lastEventTimestamp = request.timestamp
+      // Prepend to the existing requests
+      request +=: events
     }
 
     case User.IsInactive(statsActor) => {
