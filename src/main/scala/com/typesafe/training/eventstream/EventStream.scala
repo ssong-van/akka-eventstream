@@ -6,7 +6,6 @@ import EventStream._
 // Use this to simulate the stream of user requests.
 // Use the concurrentUsers to make the stream try to keep the users around that number
 class EventStream(concurrentUsers: Int) {
-
   // Create initial sessions
   var sessions: Map[Long, List[Request]] = (
     for{
@@ -14,6 +13,8 @@ class EventStream(concurrentUsers: Int) {
       session = new Session(randomVisitTime)
     } yield (session.id, session.requests)
   ).toMap
+
+  //for (1 <- (1 to concurrentUsers).toList) yield User.props()
 
   // Call this every second to get the requests for that time.
   // Note that this will not try to simulate time. Every time you call this method, you'll get the events

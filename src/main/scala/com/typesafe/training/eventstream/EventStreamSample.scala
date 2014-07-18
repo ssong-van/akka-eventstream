@@ -1,11 +1,17 @@
 package events
 
-object EventStreamSample extends App {
+import com.typesafe.training.eventstream._
+import akka.actor._
 
+object EventStreamSample extends App {
+  val system = ActorSystem("supervisor")
+  val supervisor = system.actorOf(EventStreamSupervisor.props)
   val stream = new EventStream(5)
 
   for {
     i <- 1 to 20
     requests = stream.tick
-  } println(requests)
+  } supervisor ! (EventStreamSupervisor.Tick(requests))
+
+
 }
