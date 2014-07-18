@@ -15,4 +15,6 @@ object EventStreamSample extends App {
 
   supervisor ! Stats.AverageVisitTime
   supervisor ! Stats.TopLandingPages(5)
+  supervisor ! Stats.NumberOfRequestsPerBrowser
+  supervisor ! Stats.BusiestMinute
 }
